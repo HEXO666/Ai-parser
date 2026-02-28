@@ -2,7 +2,7 @@
 
 A Flask web app with a modern UI that:
 
-1. Accepts an uploaded file (`.json`, `.csv`, `.tsv`, text-like files, and best-effort unknown formats).
+1. Accepts an uploaded file (`.json`, `.csv`, `.tsv`, `.txt`, PDFs/binary-like files, and other unknown formats via fallback parsing).
 2. Sends file content to DeepSeek Chat Completions API.
 3. Returns a downloadable CSV with this fixed header:
 

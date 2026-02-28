@@ -273,7 +273,8 @@ def run_conversion_job(
 ) -> None:
     try:
         append_job_log(job_id, f"Starting conversion for '{file_name}'.")
-        append_job_log(job_id, "Reading uploaded file.")
+        append_job_log(job_id, "Reading uploaded file (any format).")
+        append_job_log(job_id, f"Uploaded file: {file_name} ({len(file_bytes)} bytes)")
         content, warnings = load_uploaded_content(file_name, file_bytes)
         for warning in warnings:
             append_job_log(job_id, f"Warning: {warning}")
