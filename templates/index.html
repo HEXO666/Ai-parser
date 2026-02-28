@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepSeek File to CSV Converter</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 1.2rem; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+    h1 { margin-top: 0; }
+    label { display: block; margin-top: .8rem; font-weight: 600; }
+    input[type="text"], input[type="number"], input[type="file"] {
+      width: 100%; margin-top: .35rem; padding: .55rem; border: 1px solid #bbb; border-radius: 6px;
+    }
+    button { margin-top: 1.2rem; padding: .7rem 1rem; border: none; border-radius: 8px; cursor: pointer; background: #2563eb; color: white; font-weight: 700; }
+    .hint { color: #444; font-size: .92rem; margin-top: .4rem; }
+    .flash { background: #fff3cd; color: #7a5d00; border: 1px solid #ffecb5; border-radius: 6px; padding: .7rem; margin-bottom: .8rem; }
+    code { background: #f3f4f6; padding: 0.15rem 0.3rem; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>DeepSeek File → CSV</h1>
+    <p>Upload any file and convert extracted records to this schema:</p>
+    <p><code>gender, first_name, last_name, phone, address, postal_code, city, iban, bic</code></p>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" action="/convert" enctype="multipart/form-data">
+      <label for="input_file">Input file</label>
+      <input id="input_file" name="input_file" type="file" required>
+
+      <label for="api_key">DeepSeek API key</label>
+      <input id="api_key" name="api_key" type="text" placeholder="sk-... (or set DEEPSEEK_API_KEY env var)">
+
+      <label for="model">Model</label>
+      <input id="model" name="model" type="text" value="{{ default_model }}">
+
+      <label for="base_url">Base URL</label>
+      <input id="base_url" name="base_url" type="text" value="{{ default_base_url }}">
+
+      <label for="max_chars">Max input chars sent to DeepSeek</label>
+      <input id="max_chars" name="max_chars" type="number" min="1000" value="50000">
+      <div class="hint">Large files will be truncated for API safety/cost control.</div>
+
+      <button type="submit">Convert and Download CSV</button>
+    </form>
+  </div>
+</body>
+</html>
