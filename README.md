@@ -1,46 +1,45 @@
-# DeepSeek File-to-CSV Flask App
+# File to CSV Parser (No AI)
 
-A Flask web app with a modern UI that:
+This project now includes a direct Python script that does **not** call any AI API.
 
-1. Accepts an uploaded file (`.json`, `.csv`, `.tsv`, `.txt`, PDFs/binary-like files, and other unknown formats via fallback parsing).
-2. Sends file content to DeepSeek Chat Completions API.
-3. Returns a downloadable CSV with this fixed header:
+It reads an input file (TXT / JSON / CSV / TSV / other delimited text) and creates a normalized CSV with this schema:
 
 `gender, first_name, last_name, phone, address, postal_code, city, iban, bic`
 
-## Features
-
-- **Live progress tracking** with per-step logs for long conversions.
-- **Background conversion job** so the page stays responsive for large files.
-- **Settings panel (⚙️)** to configure DeepSeek API key, model, endpoint, and max input chars.
-- **One-click CSV download** once conversion finishes.
-- **Any-file fallback behavior**: unknown/binary formats are still accepted and sent with safe previews/metadata.
-- **Heuristic fallback**: if model JSON is malformed, app tries text-based extraction and still generates a CSV file (at least header).
-
-## Setup
+## Script usage
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+python3 file_to_csv.py input.txt output.csv
 ```
 
-## Run
+## Supported formats
 
-```bash
-export DEEPSEEK_API_KEY="your_api_key"   # optional if you will paste key in UI
-python3 app.py
+- Pipe-delimited (`|`) text (like your example)
+- CSV / TSV / semicolon-delimited text
+- JSON objects or JSON arrays (including `{ "records": [...] }`)
+- Fallback key-value lines (`first_name: John | last_name: Doe | ...`)
+
+## Example (your sample format)
+
+Input line:
+
+```text
+CATHERINE|COUROUZIAN|21/09/1964|65 ROUTE DU CIMETIERE|38200|SERPAIZE|0662646061|kathyisere@gmail.com|FR7610278089280002057070178|CMCIFR2AXXX
 ```
 
-Then open: `http://localhost:5000`
+Output columns mapping:
+
+- `first_name` = `CATHERINE`
+- `last_name` = `COUROUZIAN`
+- `address` = `65 ROUTE DU CIMETIERE`
+- `postal_code` = `38200`
+- `city` = `SERPAIZE`
+- `phone` = `0662646061`
+- `iban` = `FR7610278089280002057070178`
+- `bic` = `CMCIFR2AXXX`
+- `gender` = empty (unless provided in source)
 
 ## Notes
 
-- You can provide the DeepSeek key either in the settings panel or via `DEEPSEEK_API_KEY` env var.
-- Default model: `deepseek-chat`
-- Default endpoint: `https://api.deepseek.com/chat/completions`
-- `max_chars` limits payload size sent to DeepSeek.
-
-- Malformed `.json` uploads are now handled gracefully (fallback to raw text instead of hard-failing).
-- Model responses with minor JSON issues (code fences/trailing commas/smart quotes) are automatically repaired when possible.
-- If no valid JSON is returned, the app attempts key-value/regex extraction from text and still creates a CSV file.
+- The Flask UI files are still in the repo, but this script is fully standalone and does not require DeepSeek.
+- If the parser cannot infer values, it leaves fields empty.
