@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepSeek File to CSV Converter</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg2: #111827;
+      --card: rgba(255,255,255,0.08);
+      --line: rgba(255,255,255,0.15);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22d3ee;
+      --accent-2: #6366f1;
+      --good: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 10% 0%, #1e293b 0%, var(--bg) 40%), linear-gradient(160deg, var(--bg), var(--bg2));
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1.2rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    h1 { margin: 0; font-size: 1.45rem; }
+    .subtitle { margin: 0.4rem 0 0; color: var(--muted); }
+    code { background: rgba(15,23,42,0.9); padding: .2rem .4rem; border-radius: 6px; border: 1px solid var(--line); }
+
+    .icon-btn {
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: rgba(15,23,42,0.8);
+      border-radius: 12px;
+      padding: .55rem .8rem;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .settings {
+      margin-top: .9rem;
+      padding: .9rem;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(15,23,42,0.45);
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: .85rem;
+    }
+
+    .settings.open { display: grid; }
+
+    label { display: block; margin-bottom: .35rem; color: #cbd5e1; font-weight: 600; font-size: .92rem; }
+    input[type="text"], input[type="number"], input[type="file"] {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(2,6,23,0.8);
+      color: var(--text);
+      padding: .62rem;
+    }
+
+    .actions { margin-top: 1rem; display: flex; gap: .7rem; flex-wrap: wrap; }
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: .7rem 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      color: #0b1120;
+    }
+
+    .btn-link {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      background: rgba(34,197,94,.15);
+      color: #86efac;
+      border: 1px solid rgba(34,197,94,.35);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .3rem .65rem;
+      border-radius: 999px;
+      font-size: .85rem;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: rgba(2,6,23,.65);
+    }
+
+    .dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--warn); animation: pulse 1.3s infinite; }
+    .dot.done { background: var(--good); animation: none; }
+    .dot.error { background: var(--bad); animation: none; }
+
+    @keyframes pulse {
+      0% { transform: scale(.9); opacity: .65; }
+      70% { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(.9); opacity: .65; }
+    }
+
+    .progress-wrap { margin-top: .9rem; }
+    .progress-bar {
+      width: 100%;
+      background: rgba(148,163,184,.2);
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .progress-fill {
+      width: 4%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .5s ease;
+    }
+
+    .log-box {
+      margin-top: .9rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(2,6,23,.7);
+      max-height: 300px;
+      overflow: auto;
+      padding: .7rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .84rem;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+
+    .hidden { display: none !important; }
+    .small { color: var(--muted); font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1>DeepSeek File → CSV</h1>
+          <p class="subtitle">Target schema: <code>gender, first_name, last_name, phone, address, postal_code, city, iban, bic</code></p>
+        </div>
+        <button class="icon-btn" id="settingsToggle" type="button" title="DeepSeek settings">⚙️ Settings</button>
+      </div>
+
+      <form id="convertForm" enctype="multipart/form-data">
+        <label for="input_file">Upload file (JSON, TXT, CSV, PDF, or any format)</label>
+        <input id="input_file" name="input_file" type="file" required>
+
+        <div id="settingsPanel" class="settings">
+          <div>
+            <label for="api_key">DeepSeek API key</label>
+            <input id="api_key" name="api_key" type="text" placeholder="sk-... (or use DEEPSEEK_API_KEY env var)">
+          </div>
+          <div>
+            <label for="model">Model</label>
+            <input id="model" name="model" type="text" value="{{ default_model }}">
+          </div>
+          <div>
+            <label for="base_url">Base URL</label>
+            <input id="base_url" name="base_url" type="text" value="{{ default_base_url }}">
+          </div>
+          <div>
+            <label for="max_chars">Max input chars</label>
+            <input id="max_chars" name="max_chars" type="number" min="1000" value="50000">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="convertButton" type="submit">Start Conversion</button>
+          <a id="downloadLink" class="btn btn-link hidden" href="#">⬇ Download CSV</a>
+        </div>
+        <p class="small">For large files (1k+ rows), progress logs will update automatically below.</p>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="header">
+        <h2 style="margin:0; font-size:1.1rem;">Live Progress</h2>
+        <span class="status-badge"><span id="statusDot" class="dot"></span><span id="statusText">Idle</span></span>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+      </div>
+
+      <div id="logBox" class="log-box">Ready. Start a conversion to see detailed logs.</div>
+    </div>
+  </div>
+
+  <script>
+    const settingsToggle = document.getElementById('settingsToggle');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const form = document.getElementById('convertForm');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+    const logBox = document.getElementById('logBox');
+    const downloadLink = document.getElementById('downloadLink');
+    const progressFill = document.getElementById('progressFill');
+    const convertButton = document.getElementById('convertButton');
+
+    let activeJobId = null;
+    let pollTimer = null;
+
+    const phaseToProgress = (logs, status) => {
+      if (status === 'done') return 100;
+      if (status === 'error') return 100;
+
+      const joined = logs.join('\n').toLowerCase();
+      if (joined.includes('generating csv file')) return 92;
+      if (joined.includes('normalizing records')) return 80;
+      if (joined.includes('parsing model response')) return 65;
+      if (joined.includes('calling deepseek')) return 45;
+      if (joined.includes('reading uploaded file')) return 18;
+      if (joined.includes('starting conversion')) return 8;
+      return 4;
+    };
+
+    const setStatus = (text, kind = 'running') => {
+      statusText.textContent = text;
+      statusDot.className = 'dot';
+      if (kind === 'done') statusDot.classList.add('done');
+      if (kind === 'error') statusDot.classList.add('error');
+    };
+
+    const setLogs = (logs) => {
+      logBox.textContent = logs.length ? logs.join('\n') : 'No logs yet...';
+      logBox.scrollTop = logBox.scrollHeight;
+    };
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    const startPolling = (jobId) => {
+      activeJobId = jobId;
+      stopPolling();
+
+      pollTimer = setInterval(async () => {
+        const res = await fetch(`/status/${jobId}`);
+        const data = await res.json();
+        if (!data.ok) {
+          setStatus('Error', 'error');
+          setLogs([data.error || 'Unknown status error']);
+          stopPolling();
+          convertButton.disabled = false;
+          return;
+        }
+
+        setLogs(data.logs || []);
+        progressFill.style.width = `${phaseToProgress(data.logs || [], data.status)}%`;
+
+        if (data.status === 'running') {
+          setStatus('Running...', 'running');
+          return;
+        }
+
+        if (data.status === 'done') {
+          setStatus(`Done (${data.total_records} records)`, 'done');
+          downloadLink.href = `/download/${jobId}`;
+          downloadLink.classList.remove('hidden');
+          stopPolling();
+          convertButton.disabled = false;
+          return;
+        }
+
+        if (data.status === 'error') {
+          setStatus('Failed', 'error');
+          if (data.error) {
+            setLogs([...(data.logs || []), `ERROR: ${data.error}`]);
+          }
+          stopPolling();
+          convertButton.disabled = false;
+        }
+      }, 1200);
+    };
+
+    settingsToggle.addEventListener('click', () => {
+      settingsPanel.classList.toggle('open');
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      downloadLink.classList.add('hidden');
+      convertButton.disabled = true;
+      setStatus('Submitting...', 'running');
+      setLogs(['Preparing upload...']);
+      progressFill.style.width = '6%';
+
+      const formData = new FormData(form);
+      const response = await fetch('/convert', { method: 'POST', body: formData });
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        convertButton.disabled = false;
+        setStatus('Failed', 'error');
+        setLogs([data.error || 'Conversion start failed.']);
+        progressFill.style.width = '100%';
+        return;
+      }
+
+      setStatus('Queued', 'running');
+      setLogs(['Job created. Waiting for worker...']);
+      startPolling(data.job_id);
+    });
+  </script>
+</body>
+</html>
